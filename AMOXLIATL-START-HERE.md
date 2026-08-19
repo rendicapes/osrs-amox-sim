@@ -1,26 +1,62 @@
 # AMOXLIATL — START HERE
 
-> ## ✅ sim is **v15**, marker `CUREATDUMP-V15` (`FORCEDOFF-V14`, `DUMPSEED-V13` also present)
+> ## ✅ sim is **v16**, engine marker `POISONCOUNTER-V16` · page marker `DIAGPANEL-V16A`
 >
-> **At stock 23 antelope, across this session: 75 → 114 recoil, run t203 → t559.**
-> cure 4 → 32 · **phoenix necklaces spent 0 → 22 of 22** · food unchanged at 77.
+> **Grep the file for both before editing.** `POISONCOUNTER-V16` is the engine;
+> `DIAGPANEL-V16A` is the diagnostics panel and the page rewrite, which changed **no engine behaviour**.
 >
-> ## ✅ THE PLATEAU IS FIXED — v13, marker `DUMPSEED-V13`
+> **The acceptance sweep. If this row does not reproduce you do not have this build:**
 >
-> Everything below the line "## The job this session" is the **v12 state** and is kept
-> because the method in it is what found the bug. **The v12 diagnosis of the t723 death
-> was wrong**; the corrected one is here. Read this box first, then the "v13" section
-> further down for what actually changed.
->
-> **The acceptance test now passes.** Recoil rises with every extra antelope until she dies:
->
-> | carried | 23 | 40 | 60 | 80 | 100 | 110 | 115 | **120** |
+> | carried | 23 | 40 | 60 | 80 | 100 | 110 | **115** | 120 |
 > |---|---|---|---|---|---|---|---|---|
-> | recoil | 81 | 156 | 207 | 264 | 338 | 377 | 394 | **402 — KILL** |
+> | recoil (40 seeds) | **118** | 176 | 207 | 272 | 373 | 394 | **400 — 40/40 KILL** | 401 |
 >
-> 40/40 seeds win at 120 carried (117 actually spent), ends t945. `blockRisk` 0, `spikeLeak` 0.
-> Below 120 every run now spends **every** antelope it carries — the runs are food-limited,
-> not death-limited. That is the whole plateau, gone.
+> Monotonic throughout. `blockRisk` 0, `spikeLeak` 0, `lostRecoil` 0 across 420 runs.
+> At stock 23 the split is **food 77 / cure 40 / null 1 / rng 2**, and the run ends **t336**.
+> (The **t559** in the v15 notes below was `curePool` 19; v16 buys more recoil in less time.)
+>
+> ## ✅ v16a — THE DIAGNOSTICS PANEL. The three readouts that were rebuilt by hand every session are now buttons.
+>
+> In the sim, under **Route**. All three run against the same batch loop as `score()` — `mulberry32(i+1)`,
+> `simulate(false)` — and the engine appends to them and never reads them back.
+> **Verified by running both builds side by side in one process: identical at every food count, 100 seeds.**
+>
+> | button | what it answers | what it used to cost |
+> |---|---|---|
+> | **📐 Ceiling vs achieved** | food / cure / null, achieved against ceiling, with the working | a custom node script |
+> | **☠ Death causes** | tally across N seeds: tick, hp, tile, **ice ages on that tile**, and exhausted-vs-killed-early | the method that found every death so far, by hand |
+> | **⏱ Stall usage** | arms per length, avg instances against the capacity they were planned against | the L3-at-3.3-of-9 finding |
+>
+> **First real reading off it, stock 23, 40 seeds:** 19 of 40 seeds die at **exactly t336, hp 5, tile 5,
+> null phase, ice age 24, 20 necklaces unspent.** Same tick, same tile, same hitpoints — that is a
+> **structural** death, and it is the hp-5 collision already written up in the v15 section below
+> (the nest needs hp ≤ 5, standing on ice needs hp ≥ 6, and `icePatMax` is 5 so a max roll kills).
+> **It is now one click to reproduce instead of an afternoon.**
+>
+> ## ✅ BOTH OPEN PARAMETER QUESTIONS ARE CLOSED — ★ Rendi, this session
+>
+> **`restDoses` stays 3, and the two files were never in conflict.** ★ Rendi:
+> *"3 in the sim because they're made and pulled from looting bag which doesn't become 4 dose unless you
+> decant them or buy them off ge that way already made."* So `osrs-bug-principles.md` (4 doses to a slot)
+> describes a **decanted or GE-bought** rest and the sim describes a **freshly-made** one. Both right,
+> different rests. **The conflict note in three places in `osrs-bug-principles.md` should say which kind it means.**
+>
+> ⚠ **And the price of that is much larger than the file said.** The "+1 recoil" figure was measured on v15.
+> Re-measured on v16 (40 seeds, whole sweep): forcing `restDoses` 4 is **118 → 132 at stock** and drops the
+> modelled kill from **115 antelope to 110**. So *if* pre-made 4-dose rests could ever be carried instead of
+> brewed in the fight, that is worth **five antelope** — a **logistics** question, not a routing one, and the
+> only reason not to is the inventory cost of carrying them made. Nobody has priced that trade.
+>
+> **`poisonAnchor` stays 7.** 7 and 8 score **identically at every food count** (118/176/207/272/373/394/400/401),
+> so the centring argument buys margin and nothing else; 9 gains at four loadouts and loses 34 at 100, which is a
+> revert by the standing rule. Left at 7 on ★ Rendi's call.
+>
+> ## ⛔ AND THE FIGHT IS STILL NOT WINNABLE ON THE CURRENT KIT — this is the open problem, not a bug
+>
+> **food 207 + cure 90 + null 22 = 319 against 400.** Eighty-one short **at perfect play**, and the engine
+> converts 118 of the 319 at stock. Dodging, tick-saving and stall-fitting improve *survival*, not *coverage*,
+> because none of them add consumables. **The lever is a fourth coverage source or more antelope. Nothing in the
+> routing closes an 81-point ceiling gap.**
 
 ---
 
@@ -1317,6 +1353,29 @@ So the next RuneScape conversation starts with the mechanics rather than redisco
 - **`osrs-bug-principles.md` §11 — moid is queryable in-page.** The `window.items` technique, with
   the config-family and verb-space sweeps as one expression each.
 
+## The page itself — what v16a removed, and why it is not recoverable from the page
+
+**Three stacked changelog banners (v11, v10, v9) were the first thing anyone read on a public page.**
+They led with *engine 75/400 at 23 antelope*, *"the model is not yet stable"* and *"the honest status is
+undetermined"* — all ~40% below what the build produces and all since withdrawn. **Removed, not collapsed:**
+they were 17.2 KB of a 31.8 KB page. Page markup is now **21.1 KB including the new panel**. The history is in
+this file and in `git log -p -- osrs-amox-sim.html`, which has every one of them verbatim.
+
+**Five routes removed from the Plan dropdown:** ice cycle, tank at the ceiling, greedy, kite, CCQ burn. Each
+was a baseline for a question that is now answered — her 16 max hit against a 15 hitpoint ceiling closes
+tanking outright, and floor space is not the binding constraint, so kiting is not a route in its own right.
+The step-off threshold sweep button went with them (it drove the ice-cycle route), and `stepOff` is now an
+unread parameter, labelled as such rather than deleted. **`stepOn` is still live** — the CCQ recovery path
+reads it.
+
+**Four routes remain and they are one plan plus its three phases:** cure stall, delayed heal, phoenix null,
+and **★★ THE LEVEL 3 PLAN — cures, then delayed food, then nulls, then RNG**. The internal key is still
+`composite`; only the label changed, deliberately, so no engine branch had to be touched.
+
+⚠ **Do not build the rotation scheduler yet.** Unchanged from the standing note: a scheduler layered on an
+engine that still dies structurally in the null phase only produces another unfalsifiable number. The death
+panel now makes that null-phase death one click to reproduce — **fix it first, then schedule.**
+
 ## Files
 
 | File | What |
@@ -1324,6 +1383,6 @@ So the next RuneScape conversation starts with the mechanics rather than redisco
 | `AMOXLIATL-START-HERE.md` | This. Read first. |
 | `AMOXLIATL-START-HERE.txt` | The short paste-prompt version of this. |
 | `amoxliatl-level3.md` | Full investigation state — fight data, every ★ correction, phase order, cycles, the fire/cooking research, ceiling arithmetic. Standalone. |
-| `osrs-amox-sim.html` | The sim. Single file, one inline script, no dependencies. **v12.** |
+| `osrs-amox-sim.html` | The sim. Single file, one inline script, no dependencies. **v16 + v16a panel.** |
 | `osrs-bug-principles.md` | The reasoning layer — probe design, the op/ap research corollary, the zero-XP toolkit. |
 | `core-game-mechanics.md` | Engine-level: queues, delays, op vs ap, instancing. §6 carries the op-dump caveat. |
