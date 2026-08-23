@@ -20,7 +20,12 @@
    background-attachment:fixed;
    color:var(--frost);
    font:14px/1.6 'RSUF','RuneScape UF',ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
- .wrap{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
+ /* ★ FLUID SHELL (Rendi, 23 Aug): the old fixed 1320px left dead cavern-blue gutters
+    on anything wider than a laptop. This expands with the window and only caps on
+    ultrawide, where an unbounded line length starts hurting the prose blocks.
+    Side padding scales with the viewport so it never crowds the edge. */
+ .wrap{max-width:min(2200px,98vw);margin:0 auto;
+       padding:22px clamp(14px,2vw,40px) 60px}
 
  /* ── gothic headers ── */
  h1{font-family:'UnifrakturMaguntia','Cinzel Decorative','Luminari','Palatino Linotype',Georgia,serif;
@@ -155,6 +160,11 @@
     here; everything else keeps the RuneScape look. */
  .brief, .xpwarn{font-family:Arial,Helvetica,"Segoe UI",sans-serif;font-size:13px;line-height:1.62;
    letter-spacing:.005em}
+ /* ★ FULL-BLEED PROSE (Rendi, 23 Aug). Capping these panels to a reading measure was
+    tried first and looked worse — the box stopped around 900px and stranded the right
+    half of the screen. These blocks are scanned for a number, not read linearly, so
+    they run the full width with the rest of the page. The reading-measure argument is
+    real but it loses to the dead-gutter one here. */
  .brief b, .xpwarn b{font-family:Arial,Helvetica,"Segoe UI",sans-serif}
 </style></head>
 <body><div class="wrap">
