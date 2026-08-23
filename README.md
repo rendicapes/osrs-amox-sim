@@ -1,4 +1,20 @@
-# Amoxliatl fight simulator — level 3 / 10 hitpoints
+# Amoxliatl fight simulators — combat level 3 and prayer-pure
+
+Two single-file, dependency-free tick simulators for the **Amoxliatl** fight in Old School RuneScape,
+both built for accounts that cannot attack and therefore deal all damage through **ring of recoil**.
+
+| file | account | boss | state |
+|---|---|---|---|
+| `osrs-amox-sim.html` | combat level 3, 10 hitpoints | quest variant, 400 hp | kill modelled at 115 antelope; stock supplies fall short |
+| `osrs-prayer-pure-sim.html` | prayer-only pure, 10 hitpoints | quest 400 hp and post-quest 520 hp | **both routes 100%** |
+
+They are separate engines and share no code. A finding in one does **not** transfer to the other
+without re-measuring — see the prayer-pure section below for a case where exactly that assumption
+produced a phantom bug.
+
+---
+
+## The level 3 simulator — `osrs-amox-sim.html`
 
 A single-file, dependency-free tick simulator for the **Amoxliatl** quest-variant fight in Old School
 RuneScape, built for a **combat level 3, 10 hitpoint** account that deals damage **only through
@@ -76,11 +92,99 @@ The inline script is heavily commented, and the comments are the actual record: 
 mechanic that was **measured in game** and what the engine got wrong before it. Anything marked ★ is
 a practitioner correction and takes precedence over documentation.
 
-`AMOXLIATL-START-HERE.md` carries the investigation state — the settled mechanics, the deaths that
-were found and closed, what has been measured and reverted, and the open questions.
+`AMOXLIATL-START-HERE.md` carries the level 3 investigation state — the settled mechanics, the deaths
+that were found and closed, what has been measured and reverted, and the open questions.
+`PATCH-NOTES.md` is the prayer-pure sim's versioned log, newest first, and every reversal in it names
+what it reverses.
+
+---
+
+## The prayer-pure simulator — `osrs-prayer-pure-sim.html`
+
+A prayer-only pure at **10 hitpoints**, which is a different fight: Redemption becomes available, and
+so does the **post-quest boss at 520 hitpoints** that the level 3 account cannot approach at all.
+
+Two routes ship, both at 100%:
+
+| | QUEST | POST-QUEST |
+|---|---|---|
+| route | floor tank | Redemption |
+| loop | 13 ↔ 14 shuttle | room loop 16 → 20 → 26 → 22 |
+| boss hp | 400 | 520 |
+| kills | **160/160** | **100%** |
+| time | ~30 min | ~45 min |
+| slots | 28 of 28 | 23 of 28 |
+| nightshade | **0** | 473 |
+
+`blockRisk 0` on every run in every block quoted here. That counter is not a score — a non-zero value
+means the player left tiles 1-9 on a special's fire tick, which spawns an ice block that is melee-only
+to destroy, and melee is combat experience this account cannot take. Any run reading non-zero is
+**invalid**, not ranked lower.
+
+### The acceptance sweep — post-quest, and it is the interesting one
+
+Five disjoint seed blocks, 180 runs (201-260, 401-420, 501-540, 1201-1230, 1601-1630):
+
+| `stallClickTax` | `restSlots` | kills | median kill | nightshade |
+|---|---|---|---|---|
+| 1 *(the bug)* | 0 | 180/180 · 100% | 38.8 min | 464 |
+| 0 *(correct)* | 0 | 147/180 · 81.7% | 44.6 min | 470 |
+| **0** | **2** *(shipped)* | **100%** | **44.6 min** | **473** |
+
+The bottom row is validated on a **holdout of 140 seeds never used to tune it**: 140/140.
+
+### Why that middle row exists, because it is the whole lesson
+
+The engine carried a parameter that added **one tick of stall duration to every arm**, introduced on a
+misreading of how the stall window worked. It was caught, and removing it dropped the route from 100%
+to 82%. Every one of the 33 deaths was at the **same tick**, byte-identical across seeds:
+
+> `t96  → tile 7 ⚠ nowhere safe to stop | floor 10 · recoil 1 | ☠ DEATH, 10 landed against 10 hitpoints`
+
+Post-quest floor damage rolls **7-10 against 10 maximum hitpoints**. Maximum floor damage is *exactly*
+maximum health, so one unprotected tick on live ice is a one-in-four death from full. The plan has no
+margin by construction, and the phantom tick had been covering the single tick where margin was needed.
+
+The fix was two slots of Guthix rest — a rest overheals the ceiling to 15, so a 10 stops being lethal.
+**The rests had been dropped earlier because a sweep of 12/8/6/4/2 came back 40/40 at every value** —
+run on the engine with the phantom tick. Each was load-bearing for the same tick, so each masked the
+other and neither looked required.
+
+Two things worth carrying out of that:
+
+- **A bound in a chooser is not a statement about the machine.** The claim that a stall covered attacks
+  only from `T+1` came from an eligibility bound inside the stall *planner*, not from the engine, which
+  had been deferring arm-tick attacks all along. Relaxing the bound produces bit-identical runs — the
+  branch is unreachable, because the planner never schedules an arm on an attack tick.
+- **A parameter that sweeps flat is not proven unnecessary; it may be masked by a bug.** After fixing an
+  engine fault, re-sweep everything that was tuned under it, and be most suspicious of whatever swept
+  flat.
+
+Both stall questions were settled by in-game observation rather than from the desk: **a stall defers the
+floor damage *and* the attack of the tick it is armed on** — one window, `[T … T+L−1]`, L ticks for an
+L-tick stall. Full history in `PATCH-NOTES.md` under v15 through v18.
+
+### Reproducing the numbers
+
+The engine is pure and runs headlessly. Load the page under `jsdom` with `runScripts: 'dangerously'`,
+then inject a second `<script>` to expose the bindings — they are top-level `const`/`let` in a classic
+script, so they are not on `window`:
+
+```js
+const s = doc.createElement('script');
+s.textContent = `window.__H = {P, simulate, mulberry32, applyPreset, setRNG: f => { RNG = f; }};`;
+doc.body.appendChild(s);
+```
+
+Then per run: `applyPreset('postquest')` → override parameters **after** the preset (it resets them all)
+→ `setRNG(mulberry32(seed))` → `simulate(false)`. Use `simulate(true)` only for a tick sheet; it builds
+thousands of frames. Roughly 1.5 s a run.
+
+---
 
 ## Caveat
 
-The numbers are the **simulator's**, not a promise. Every antelope count quoted in this project's
-history has been withdrawn at least once when a mechanic turned out to be measured wrong. Treat any
-figure here as the current best model, and re-measure before spending anything on it.
+The numbers are the **simulators'**, not a promise. Every antelope count and every nightshade count
+quoted in this project's history has been withdrawn at least once when a mechanic turned out to be
+measured wrong — the 82% row above is one of them, and it survived a version release. Treat any figure
+here as the current best model, and re-measure before spending anything on it.

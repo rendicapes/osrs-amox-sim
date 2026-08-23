@@ -5,6 +5,235 @@
 
 ---
 
+## 23 AUG · v18, ★★★ THE 82% WAS A MIS-FITTED PLAN, NOT THE PHYSICS. BACK TO 100% FOR TWO SLOTS.
+
+Rendi, on the v16 result: *"why did it go down, the free tick should have helped not hurt."* Right
+instinct, and chasing it found the actual answer.
+
+### ★ WHY REMOVING THE TAX HURT: IT WAS NEVER A TIMING OFFSET
+
+`st.stall = len + p('stallClickTax')`. The tax did not *shift* the window — it **added a tick of stall
+duration to every single arm**, and the planner's `hi = A+L-1+_TAX` / `dump = A+L+_TAX` made every
+candidate stall *look* a tick longer too, so the choice set was bigger. Taking it away removes a real
+tick of protection from ~376 arms a kill.
+
+**And it changes which plan gets picked, not just its length.** Same seed, same everything else:
+
+| | tax 1 | tax 0 |
+|---|---|---|
+| arms at | t95, **3-tick stall on tile 4** | t94, **1-tick stall on tile 14** |
+| Redemption fires | t99 | t95 |
+| t96 | still stalled, feet locked, safe | **"nowhere safe to stop" → forced to tile 7, live ice** |
+| outcome | kill at t3937 | **dead at t96** |
+
+### ★★ THE AUTOPSY: ALL 33 DEATHS ARE ONE EVENT
+
+Not a survival tail. **Every death in all 180 runs is at tick 96**, and the traces are byte-identical
+across seeds. The kill:
+
+> `t96  → tile 7 ⚠ nowhere safe to stop | floor 10 · recoil 1 | ☠ DEATH, 10 landed against 10 hitpoints`
+
+**Post-quest floor damage rolls `icePatMin 7` to `icePatMax 10`, against `hpBase 10`.** The maximum
+floor roll is *exactly* maximum hitpoints, so **one unprotected tick on live ice is a 1-in-4 death from
+full health.** The plan has zero margin by construction; the phantom tick was covering the one tick
+where that margin was needed.
+
+### ★★★ THE FIX: `restSlots` 0 → 2. NOTHING ELSE.
+
+A Guthix rest overheals to `hpCeil 15`, so a floor 10 stops being lethal.
+
+| `restSlots` | kills (tuning block 201-240) |
+|---|---|
+| **0** (shipped) | 34/40 · 85.0% |
+| **2** | **40/40 · 100%** |
+| 4 | 40/40 · 100%, +7 nightshade |
+| 8 | 40/40 · 100%, +15 nightshade |
+
+**Validated on a holdout of 140 seeds never used to pick it** (241-260, 401-420, 501-540, 1201-1230,
+1601-1630):
+
+| | kills | nightshade | median kill | arms | blockRisk |
+|---|---|---|---|---|---|
+| `restSlots 0` | 113/140 · 80.7% | 470 | 44.6 min | 376 | 0 |
+| **`restSlots 2`** | **140/140 · 100%** | **473** | 44.6 min | 376 | **0** |
+
+**Cost: two inventory slots and three nightshade.** No time cost, no arm-count change, `blockRisk 0`.
+Bag goes 22 → **24 of 28**, four spare. Two is the cheapest value that works; more rests only cost
+nightshade.
+
+### ⛔ AND `graceMobile 1` IS CATASTROPHIC. SWEPT, REVERTED.
+
+The walk-aware descent check looked like the obvious answer to *"nowhere safe to stop"*. It is not:
+**0/40, median arm count collapses 376 → 8.** Reverted, untouched at 0.
+
+### The lesson, and it is the useful one
+
+**The rests were dropped at v5 because a sweep said they were unnecessary — on the engine with the
+phantom tick.** The free tick had been standing in for the Guthix rest all along, and nobody could see
+it because both were load-bearing for the same single tick.
+
+**A parameter that sweeps flat is not proven unnecessary; it may be masked by a bug.** When an engine
+fault is fixed, every parameter that was swept *under* the fault has to be re-swept, not inherited —
+the v16 conclusion ("the cost of the fix is reliability and time") was wrong for exactly this reason,
+and it was wrong because I re-measured the route without re-tuning it.
+
+---
+
+## 23 AUG · v17, ★★ v16'S OPEN QUESTION CLOSED IN ONE LINE. NO NUMBER MOVES.
+
+v16 left one thing open: does an **auto** also defer when the stall is armed on its tick, or only the
+floor? I put **~55% on "it lands"**, reasoning that damage is computed when an attack is *fired*, so an
+auto already in flight was never deferrable.
+
+> **Rendi, authoritative, 23 Aug: "it defers yes like every other stall."**
+> **And: "the stalls initiate on the window they're open."**
+
+Wrong by 55 points, and that is **23 out of 23** for the practitioner over the model. There is **no
+asymmetry**. Floor and attacks share **one** window:
+
+| | window | ticks for an L-tick stall |
+|---|---|---|
+| floor **and** attacks | `[T … T+L−1]`, arm tick inclusive | L |
+
+So **a 1-tick stall does swallow the next auto** — Rendi's original 22 Aug intuition, the one the click
+tax was invented to satisfy. The intuition was right and the fix was wrong: **the engine was already
+delivering it**, and the tax bought nothing except a tick of floor it was not entitled to.
+
+### ☑ AND IT CHANGES NOTHING ON THE PAGE — CHECKED, NOT ASSUMED
+
+Rendi's read on hearing the plan: *"pretty sure this is already worked in... don't think it changes
+anything on our current sim."* Correct on both halves.
+
+**The engine already defers the arm tick's auto.** In one tick iteration the order is: decrement
+`st.stall` → **ARM** → resolve the boss. The boss block reads `stalled = st.stall > 0`, so a stall armed
+on T is live for T's own auto.
+
+**The only `A+1` left is a conservative *planner* bound** (`const lo = A+1` in `consider`), which merely
+declines to *count* an arm-tick auto as covered, so the planner arms a tick earlier than it strictly
+must. Relaxing it to `A` and re-running:
+
+| | kills | median nightshade | median kill | median arms |
+|---|---|---|---|---|
+| shipped, `lo = A+1` | 43/50 · 86.0% | 470 | 44.6 min | 376 |
+| scratch, `lo = A` | 43/50 · 86.0% | 470 | 44.6 min | 376 |
+
+**0 of 50 runs differ**, run for run, on kill / ticks / nightshade / arm count — 50 seeds across two
+disjoint blocks (401-420, 1601-1630). The branch is unreachable: the planner **never places an auto on an
+arm tick anyway** — 0 of 376 arms in seed 401.
+
+**Left as is deliberately.** The change is provably a no-op, and a no-op that costs a re-validation of
+every shipped number is a worse trade than a comment. The bound is now documented in place so nobody
+reads `A+1` as a claim about the engine again. **v16's 81.7% / 44.6 min / 470 nightshade all stand.**
+
+### The lesson worth keeping
+
+The planner's window formula and the engine's actual behaviour were two different models of the same
+thing, and only the planner's was written down anywhere. **A bound in a chooser is not a statement about
+the machine** — v15 read one as the other and built a whole "known bug" on top of it.
+
+---
+
+## 23 AUG · v16, ★★★ SETTLED IN GAME. THE DOUBLE-COUNT IS FIXED, AND POST-QUEST IS NOT A 100% ROUTE.
+
+v15 ended on a question only Rendi could answer. He answered it.
+
+> **Rendi, authoritative, 23 Aug: "stall defers floor damage."**
+
+Under v15's own branch that is decisive. *If it DEFERS, the stall IS live on tick T and the click tax
+should not apply to the stall at all.* So **`stallClickTax` 1 → 0**, and the legacy asymmetry was right
+all along:
+
+| | window | ticks for an L-tick stall |
+|---|---|---|
+| floor | `[T … T+L−1]`, **arm tick inclusive** | L |
+| attacks | `[T+1 … T+L−1]` | L−1 |
+
+It also now has a *reason* rather than being an accident: the arm goes in during the **input** phase of
+T, ahead of queue processing, and the floor roll resolves in that same tick's queue processing, so it is
+swept in.
+
+### ★ RE-MEASURED: 180 runs, five disjoint seed blocks, `blockRisk 0` in every one
+
+Blocks 201-260, 401-420, 501-540, 1201-1230, 1601-1630. Same engine, one parameter, nothing else touched.
+
+| | tax 1 (the bug) | **tax 0 (correct)** |
+|---|---|---|
+| kills | 180/180, **100%** | **147/180, 81.7%** |
+| median kill, winning runs | 38.8 min | **44.6 min** |
+| arms per kill | 324 | **376** |
+| rock cake clicks | 1,331 | **1,683** |
+| nightshade, winning runs | 464 | **470** |
+| ice-block risk | 0 | **0** |
+
+> **SUPERSEDED BY v18 above. The 81.7% was a mis-fitted plan, not a verdict on the corrected physics.
+> `restSlots` 0 → 2 puts it back to 100% for two inventory slots. Read on for how the number was reached.**
+
+**The headline is the kill rate, not the supply.** v15 warned that the 465 nightshade was optimistic; it
+was not — **nightshade per winning kill moved 464 → 470, which is nothing**, and the 28-slot bag still
+fits. What the double-count was actually buying was **reliability and time**. The route loses ~18 points
+of kill rate and gains ~6 minutes.
+
+*(The mean nightshade looks like it falls, 465 → 386. That is a truncation artefact — a run that dies
+spends less. Read the winning-runs row; it is the only one that means anything for supply.)*
+
+### ★ AND `exitGrace` 4 CANNOT RESCUE IT. SWEPT, WORSE, REVERTED.
+
+`exitGrace` 2 → 4 is what took this route from 27/160 to 100% at v5, so it was the obvious knob to try
+again. Swept at tax 0 on block 201-260, 60 seeds each:
+
+| exitGrace | kills | median arms |
+|---|---|---|
+| **4** | **50/60, 83.3%** | 376 |
+| 5 | 23/60, 38.3% | 153 |
+| 6 | 0/60, 0.0% | 81 |
+
+Raising the grace **rejects arm plans** — the median arm count collapses 376 → 153 → 81, so you arm too
+rarely to land the recoil the boss needs. The knob that rescued this route once cannot rescue it twice.
+**Reverted to 4**, which remains optimal. One change, measured, reverted when it made the number worse.
+
+### ⚠⚠ WHAT THIS DOES **NOT** SETTLE, AND IT IS NOW THE OPEN QUESTION
+
+> **CLOSED THE SAME DAY — see v17 above. The answer was "it defers", my ~55% was backwards, and it
+> changes no number on the page. Everything below in this section is superseded; kept as the record.**
+
+The tax went in on Rendi's 22 Aug statement that *"any inventory action takes a tick to register"* —
+which is §14, and is not in doubt for a **prayer** click. Both cannot be literally true of the same tick
+unless the two things are different: the click **registers** on T+1 for effects you initiate, while the
+**delay the item creates** is placed on T and catches whatever resolves in that tick's queue. **That
+reading is mine, not measured.**
+
+Its live consequence is that the **attack window still starts at T+1**, so **a 1-tick stall swallows zero
+autos** — which is exactly the thing the tax was added to fix, and exactly Rendi's original question
+("arming a 1-tick stall the tick before should cover the next auto attack, no?").
+
+**Cheapest test that settles it:** arm a 1-tick stall on the tick before an auto is due, and watch whether
+the auto is deferred.
+
+- **Deferred** → the attack window starts on T too, and this engine is still a tick out on attacks.
+  Post-quest would then get *cheaper* again, so this is worth an in-game minute before trusting the 82%.
+- **Lands** → floor and attacks genuinely have different windows and the model is complete.
+
+**~55% it lands**, on the reasoning that damage is computed when an attack is *fired* rather than when it
+resolves, so an auto already in flight was never deferrable. What would move it up: any trace where a
+projectile's damage is fixed before the stall. What would move it down: Rendi's own 22 Aug intuition,
+which is a practitioner's and has beaten the model 21 times out of 21.
+
+### ⚠ SEPARATELY UNTESTED, AND DO NOT LET THIS RESULT LEAK INTO IT
+
+**Rendi, 23 Aug: whether an *interface* defers damage as a low-priority hold is still untested.** That is
+a different mechanism from the item stall measured here. The archive runs against it — damage is a
+**STRONG** script and force-closes modals, which is why interfaces stopped holding damage and get eaten
+two at a time. The interface-nest branch is unreachable in every shipped route (`stallVia` is set to
+`'item'`), so nothing on the page depends on the answer, but it is now flagged in the code so it cannot
+be inherited silently if that branch is ever re-enabled.
+
+### Not affected
+
+The **quest floor-tank route** (never arms a stall at all — re-run as a control, unchanged), everything
+measured before v10, and the **level 3 sim**, which never had the tax.
+
+---
+
 ## 22 AUG · v15, ⛔⛔ KNOWN BUG: THE CLICK TAX DOUBLE-COUNTS. POST-QUEST NUMBERS ARE OPTIMISTIC.
 
 Rendi asked whether the level 3 sim already accounted for the one-tick delay, said he'd seen it in the tick log.

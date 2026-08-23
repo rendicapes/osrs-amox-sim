@@ -181,8 +181,8 @@
  <table style="margin:6px 0 0;border-collapse:collapse;width:100%">
  <tr><th style="text-align:left;padding:2px 14px 2px 0">&nbsp;</th><th style="text-align:left;padding:2px 14px 2px 0">kills</th><th style="text-align:left;padding:2px 14px 2px 0">time</th><th style="text-align:left;padding:2px 14px 2px 0">slots</th><th style="text-align:left">the loop</th></tr>
  <tr><td style="padding:1px 14px 1px 0"><b style="color:#9ff0c4">QUEST</b>, floor tank</td><td><b>160/160</b></td><td>~30 min</td><td>28 of 28</td><td>step 13 &harr; 14, bolt-hole 7 / 8</td></tr>
- <tr><td style="padding:1px 14px 1px 0"><b style="color:#ffcf8b">POST-QUEST</b>, Redemption</td><td><b>100%</b><span style="color:#ffb4a8">&#8225;</span></td><td>~39 min</td><td>21 of 28</td><td>room loop 16 &rarr; 20 &rarr; 26 &rarr; 22</td></tr></table>
- <p style="margin:6px 0 0;padding:7px 10px;border-left:3px solid #d9534f;background:#2a1618;color:#ffd9d4;font-size:12px"><b>&#8225; THE POST-QUEST ROW IS PROVISIONAL, a known bug is open against it.</b> The stall click tax currently double-counts the arm tick&#8217;s floor damage, so a 3-tick stall harvests <b>four</b> ticks of floor rather than three, about one extra instance per arm. Every post-quest figure here (the 100%, the ~39 minutes, the 465 nightshade, the <code>cakeBelow</code> and <code>exitGrace</code> tuning) was measured on that engine and is therefore <b>optimistic</b> until it is settled. One observation settles it: <b>click a stall item while standing on live ice, does that tick&#8217;s floor damage defer into the stall, or land?</b> The QUEST row is unaffected, the floor tank never arms a stall at all. Full detail in PATCH-NOTES v15.</p>
+ <tr><td style="padding:1px 14px 1px 0"><b style="color:#ffcf8b">POST-QUEST</b>, Redemption</td><td><b>100%</b></td><td>~45 min</td><td>23 of 28</td><td>room loop 16 &rarr; 20 &rarr; 26 &rarr; 22</td></tr></table>
+ <p style="margin:6px 0 0;padding:7px 10px;border-left:3px solid #4f8a5c;background:#16241a;color:#cfeddb;font-size:12px"><b>&#9733; RESOLVED 23 Aug, AND THE ROUTE IS BACK TO 100% FOR TWO SLOTS.</b> ME settled both stall questions in game: a stall defers the arm tick&#8217;s <b>floor damage AND its attack</b> (<i>&ldquo;the stalls initiate on the window they&#8217;re open&rdquo;</i>), so floor and attacks share ONE window <code>[T &hellip; T+L-1]</code> and <code>stallClickTax</code> is back to <b>0</b>. <b>That cost the route its 100%</b> &mdash; not because the physics got worse, but because <code>st.stall = len + tax</code> had been handing every arm a <b>free extra tick of stall</b>, and the whole 22 Aug tuning was fitted to it. All 33 deaths were the same event: the descent dumps you with nowhere clean to stand and <b>the floor rolls 7-10 against 10 maximum hitpoints</b>, so a 10 kills from full. <b>&#9733; THE FIX IS <code>restSlots</code> 0 &rarr; 2.</b> A Guthix rest overheals to 15, and a 10 no longer kills. <b>140/140 on a holdout of seeds never used to tune it</b>, +3 nightshade, no time cost, blockRisk 0. The rests were dropped at v5 because a sweep said they were unnecessary &mdash; on the engine with the phantom tick. <b>The free tick had been standing in for the Guthix rest all along.</b> PATCH-NOTES v16-v18.</p>
  <p class="dim" style="margin:6px 0 0">Both are the first two entries in the <b>Preset</b> dropdown and the page boots on the quest one.
  <b>Tiles 1-9 on every icicle FIRE tick, no exceptions</b>, that is the only rule that cannot be recovered from.
  The tick sheet below prints the click order and the walk; the Supplies card prints what it spent and whether the bag fits in 28 slots.</p>
@@ -842,36 +842,40 @@ const P={
         'The flag breaks the planner\'s assumptions instead of isolating the variable. '+
         '★ SO THE FEET LOCK CANNOT BE PRICED CHEAPLY IN THIS ENGINE, and my stall-free route cannot be '+
         'approximated by switching it off. It needs the real build, see redempOpenField below.'},
- stallClickTax:{v:1,prov:'m',grp:'stall',label:'★ The stall arm pays the one-tick click tax (1/0)',
-   note:'★★★ ME, 22 Aug, AND IT IS AN INCONSISTENCY IN MY ENGINE, NOT A TUNING KNOB: "arming a stall of 1 '+
-        'tick length pressed the tick before to arm with something like the easter ring should cover the next '+
-        'auto attack by a 1 tick delay if timed correctly no?" '+
-        '★ HE IS POINTING AT §14, WHICH THIS ENGINE ALREADY OBEYS EVERYWHERE ELSE. authoritative, on '+
-        'the prayer: "you have to click magic protect the tick BEFORE the special hits you", the click goes '+
-        'in on T and the effect is live for the damage calculated on T+1. The flick model implements exactly '+
-        'that. The STALL ARM was NOT paying it: I armed on T and had the stall live on T, so the swallow '+
-        'window came out as [T+1 … T+L-1], which is EMPTY at L=1. Under the click tax the arm on T goes live '+
-        'on T+1, the window is [T+1 … T+L], and a 1-tick stall swallows exactly one attack, the auto he is '+
-        'describing. '+
-        '⛔⛔⛔ KNOWN BUG, FOUND 22 Aug, NOT YET FIXED, THIS PARAMETER CURRENTLY DOUBLE-COUNTS. Traced from '+
-        'I asking whether the level 3 sim already had the tax. It does not; but chasing it exposed that '+
-        'THE ARM TICK WAS ALREADY BEING HARVESTED FOR FLOOR DAMAGE in the legacy model, and the tax then adds '+
-        'another tick on top. Measured, same seed, 3-tick stall: '+
-        'tax 0 → floor deferred on t142, t143, t144 = THREE ticks (arm tick inclusive) + 1 auto = 4 instances. '+
-        'tax 1 → floor deferred on t141, t142, t143, t144 = FOUR ticks + 1 auto = 5 instances. '+
-        'A 3-tick stall is harvesting FOUR ticks of floor. That is roughly ONE EXTRA INSTANCE PER ARM, and it '+
-        'inflates every post-quest number taken since the tax went in, the 100% kill rate, the 465 nightshade '+
-        'and the ~39 minutes are all OPTIMISTIC until this is settled. '+
-        '★ THE FIX DEPENDS ON A GAME QUESTION ONLY ME CAN SETTLE: click a stall item on tick T while '+
-        'standing on LIVE ICE, does that tick\'s floor damage get DEFERRED into the stall, or does it land '+
-        'normally? '+
-        'If it LANDS, the stall is not live yet and the floor window must be [T+1 … T+L], exclude the arm '+
-        'tick, keep the tax. If it DEFERS, the stall IS live on T and the tax should not apply at all. '+
-        'Right now the engine does BOTH, which cannot be right under either answer. '+
-        '1 = pay the tax. 0 = the pre-22-Aug model, and the one every measurement before that date used. '+
-        '★★ ME CONFIRMED, 22 Aug: \'yeah that needs to be applied to the stall arm / any inventory action '+
-        'takes a tick to register.\' DEFAULT IS NOW 1. 0 is kept only to reproduce every measurement taken '+
-        'before this date. '+
+ stallClickTax:{v:0,prov:'m',grp:'stall',label:'★ The stall arm pays the one-tick click tax (1/0)',
+   note:'★★★ SETTLED IN GAME, 23 Aug. THE OPEN DOUBLE-COUNT IS CLOSED AND THE DEFAULT IS BACK TO 0. '+
+        'The question v15 could not answer from the desk: click a stall item on tick T while standing on LIVE '+
+        'ICE, does that tick\'s floor damage defer into the stall or land normally? '+
+        '★ ME, AUTHORITATIVE, 23 Aug: "stall defers floor damage." IT DEFERS. '+
+        'Under v15\'s own branch that is decisive: the stall IS live on the arm tick, so the tax must not be '+
+        'applied to it at all. Floor window [T … T+L-1], arm tick inclusive, L ticks for an L-tick stall. '+
+        'The legacy asymmetry was RIGHT and it now has a reason rather than being an accident: the arm goes in '+
+        'during the input phase of T, ahead of queue processing, and the floor roll resolves in that same '+
+        'tick\'s queue processing, so it is swept in. '+
+        '★ WHAT THIS COSTS: measured on the three canonical post-quest blocks, removing the tax removes about '+
+        'one instance per arm, so the fight needs MORE arms, runs LONGER and burns MORE nightshade. Every '+
+        'post-quest figure taken between 22 Aug (v10) and this fix was optimistic by that margin. The numbers '+
+        'on this page are the re-measured ones. '+
+        '★★ AND THE FOLLOW-UP IS CLOSED TOO, SAME DAY. I asked whether an AUTO also defers when the stall '+
+        'is armed on its tick. ME: "it defers yes like every other stall" / "the stalls initiate on the '+
+        'window they are open." So there is NO asymmetry: floor and attacks share ONE window, [T … T+L-1], '+
+        'L ticks for an L-tick stall, and A 1-TICK STALL DOES SWALLOW THE NEXT AUTO. '+
+        '★ I HAD THIS AT ~55% THE OTHER WAY AND WAS WRONG. The reasoning was that damage is computed when an '+
+        'attack is FIRED so an auto in flight was never deferrable. That is 23 out of 23 for the practitioner. '+
+        '☑ AND IT CHANGES NO NUMBER ON THIS PAGE, verified rather than assumed. The ENGINE already did it: in '+
+        'one tick the order is decrement st.stall, then ARM, then resolve the boss, and the boss block reads '+
+        'stalled = st.stall>0, so an arm on T is live for T\'s own auto. The only A+1 left is a CONSERVATIVE '+
+        'PLANNER bound that declines to count an arm-tick auto as covered. Relaxing it to A is BIT-IDENTICAL: '+
+        '50 seeds, 0 of 50 runs differ on kill, ticks, nightshade or arm count, because the planner never '+
+        'places an auto on an arm tick anyway (0 of 376 arms in seed 401). LEFT AS IS. '+
+        '★ SO THE 22 Aug INTUITION WAS RIGHT AND THE 22 Aug FIX WAS WRONG: a 1-tick stall armed the tick '+
+        'before an auto does cover it, but the engine was already delivering that, and the click tax bought '+
+        'nothing except an extra tick of floor it was not entitled to. '+
+        '⚠ SEPARATELY UNTESTED (ME, 23 Aug): whether an INTERFACE defers damage as a low-priority hold. That '+
+        'is a different mechanism from the item stall measured here, the archive has damage as a STRONG script '+
+        'that force-closes modals, and nothing on this page should be read as evidence either way. '+
+        '1 = pay the tax, the 22 Aug–23 Aug model, kept only to reproduce measurements taken in that window. '+
+        '0 = correct, and what every measurement before 22 Aug and after this fix uses. '+
         '⚠ THIS SHIFTS EVERY STALL BY ONE TICK, so it re-prices the whole page, read the presets sweep after '+
         'changing it, not just one route.'},
  graceMobile:{v:0,prov:'a',grp:'stall',label:'★ The descent may WALK to clear floor, not stand still',
@@ -3180,6 +3184,17 @@ function simulate(record){
             /* ★ the click tax: an arm clicked on A goes live on A+1, so the swallow
                window and the dump both slide one tick later. I, 22 Aug. */
             const _TAX=p('stallClickTax');
+            /* ★★ lo IS A+1 AND THAT IS A CONSERVATIVE PLANNER BOUND, NOT THE ENGINE'S BEHAVIOUR.
+               ME, 23 Aug: "the stalls initiate on the window they're open" — and the engine agrees.
+               In one tick iteration the order is: decrement st.stall, then ARM, then resolve the boss,
+               and the boss block reads `stalled = st.stall>0`. So a stall armed on T is already live for
+               T's own auto: the ENGINE defers the arm tick's attack exactly as it defers the arm tick's
+               floor. This bound only makes the PLANNER decline to *count* an arm-tick auto as covered,
+               so it arms a tick earlier than it strictly must. MEASURED, 23 Aug: relaxing it to A is
+               BIT-IDENTICAL — 50 seeds (401-420, 1601-1630), 0 of 50 runs differ on kill, ticks,
+               nightshade or arm count. The planner already never places an auto on an arm tick (0 of
+               376 arms in seed 401), so the branch is unreachable. LEFT AS IS deliberately: changing it
+               buys nothing measurable and costs a re-validation of every shipped number. */
             const lo=A+1, hi=A+L-1+_TAX, dump=A+L+_TAX;
             if(MUSTCOVER && hi < E0) return null;                /* (1) misses the first event */
             /* ★ the delayed portion of the hunter food MUST resolve inside the
@@ -3441,6 +3456,16 @@ function simulate(record){
           /* ★ ME: holding the nightshade interface only works on a NON-DAMAGING
              tile. Any damage rolling in while you wait for the auto collapses it,              the pop-up closes and the deferral is gone. So the interface nest must
              be armed off live ice, and you must stay off it for the wait. */
+          /* ⚠⚠ EXPLICITLY UNTESTED (ME, 23 Aug), AND DO NOT LET THE 23 Aug STALL
+             RESULT LEAK INTO IT. What was settled in game is that an ITEM stall
+             defers the arm tick's floor damage. Whether an INTERFACE defers damage
+             as a low-priority hold is a DIFFERENT mechanism and is still untested.
+             The archive's position runs against it: damage is a STRONG script and
+             force-closes modals, which is why interfaces stopped holding damage and
+             get eaten two at a time. This branch is currently unreachable in every
+             shipped route (stallVia is set to 'item' immediately above), so nothing
+             on this page depends on the answer — but if the interface nest is ever
+             re-enabled, that assumption has to be measured first, not inherited. */
           if(st.stallVia==='interface' && st.onFloor){
             if(st.armLog&&st.armLog.length) st.armLog[st.armLog.length-1].collapsed=true; /* recorder only */
             st.stall=0; st.stallVia=null; st.dmgQ=[]; st.capFrozen=null;
@@ -3484,7 +3509,7 @@ function simulate(record){
               ' <b>&middot; CLAIMS:</b> attacks t'+_aFrom+(_aTo>=_aFrom?'-t'+_aTo:' (none, window empty)')+
               ' &middot; floor t'+_fFrom+'-t'+_fTo+' ('+(_fTo-_fFrom+1)+' tick'+((_fTo-_fFrom)?'s':'')+')'+
               ' &middot; <b>dumps t'+_dump+'</b>'+
-              (_tx && _fFrom===st.tick ? ' <span style="color:#ffb4a8">&#9888; floor counted from the ARM tick AND the tax is on, this is the open double-count, see PATCH-NOTES v15</span>' : '')});
+              (_tx && _fFrom===st.tick ? ' <span style="color:#ffb4a8">&#9888; tax is ON and floor is counted from the ARM tick &mdash; that is the v15 double-count, settled 23 Aug as tax 0. This run is reproducing the 22 Aug engine, not the corrected one.</span>' : '')});
           }
           }
         }
@@ -4280,8 +4305,25 @@ const PRESETS=[
   pol:'floortank', p:{patrolMode:2,protMagic:3,prayerLevel:37,restSlots:15,bagRests:0,ringMode:1,
       ringsCarried:11,holdBeforeSpec:6,exitGrace:0,redempBoost:0,bossHp:400,autoMax:16,specMax:17,
       icePatMin:3,icePatMax:5,prayRegenDoses:4}},
- {k:'postquest', n:'★★ POST-QUEST, Redemption · room loop · 100% · 21 slots · NO Guthix rest · 465 nightshade',
-  d:'★★ SOLVED. The real boss at my 7-10 floor, and it now kills every time: 120 out of 120 across '+
+ {k:'postquest', n:'★★ POST-QUEST, Redemption · room loop · 100% · 23 slots · 2 Guthix rest · 473 nightshade',
+  d:'★★★ RE-MEASURED 23 Aug ON THE CORRECTED ENGINE, AND THIS ROUTE IS NO LONGER 100%. '+
+    'ME settled the v15 question in game: a stall DEFERS the arm tick\'s floor damage, so the stall is live '+
+    'on the arm tick and stallClickTax must be 0. That removes about one instance per arm. Re-run on FIVE '+
+    'disjoint seed blocks, 180 runs (201-260, 401-420, 501-540, 1201-1230, 1601-1630), blockRisk 0 in every '+
+    'single one: '+
+    '★ KILLS 180/180 (100%) → 147/180 (81.7%). '+
+    '★ MEDIAN KILL 38.8 → 44.6 minutes. '+
+    '★ ARMS PER KILL 324 → 376. Rock cake clicks 1331 → 1683. '+
+    '☑ NIGHTSHADE PER WINNING KILL 464 → 470, essentially unmoved — the supply plan and the 28-slot bag '+
+    'both still hold. The cost of the fix is RELIABILITY AND TIME, not supply, which is the opposite of what '+
+    'the v15 warning guessed. '+
+    '★ AND exitGrace 4 IS STILL OPTIMAL, measured not assumed: swept 4/5/6 at tax 0 on block 201-260, '+
+    '83.3% / 38.3% / 0.0%. Raising the grace rejects arm plans (median arms 376 → 153 → 81), so you arm too '+
+    'rarely to land the recoil. The knob that rescued this route at 27/160 cannot rescue it again. REVERTED to 4. '+
+    '⚠ EVERYTHING BELOW THIS LINE IS THE HISTORICAL 22 Aug WRITE-UP and its numbers were taken on the '+
+    'double-counting engine. Kept because the REASONING is still correct and the retractions are the record; '+
+    'read every figure in it as optimistic by the margin above. '+
+    '★★ SOLVED. The real boss at my 7-10 floor, and it now kills every time: 120 out of 120 across '+
     'THREE disjoint seed blocks (201-260, 401-420, 501-540), blockRisk 0 in all of them, and the WORST run '+
     'still dealt 520 recoil against a 520-hitpoint boss. It was 27/160 one parameter ago. '+
     '★ THE ONE THING THAT CHANGED: exitGrace 2 → 4. Nothing else. The plan, the loop, the bag and every other '+
@@ -4367,7 +4409,7 @@ const PRESETS=[
     '1 + heal − instances, which is the number the exit roll has to be survived on. That is the thing to pull to '+
     'attack if the supply is the thing stopping you, NOT the descent.',
   pol:'redemption', p:{patrolMode:7,protMagic:2,prayerLevel:50,restSlots:0,bagRests:0,ringMode:1,
-      ringsCarried:14,exitGrace:4,cakeBelow:5,stallShort:1,stallCrate:3,stallEgg:0,stallLong:0,redempBoost:1,holdBeforeSpec:0,bossHp:520,autoMax:22,specMax:34,
+      ringsCarried:14,exitGrace:4,cakeBelow:5,restSlots:2,stallShort:1,stallCrate:3,stallEgg:0,stallLong:0,redempBoost:1,holdBeforeSpec:0,bossHp:520,autoMax:22,specMax:34,
       icePatMin:7,icePatMax:10,prayRegenDoses:8}},
 
  {k:'quest-hybrid', n:'· quest, Hybrid on the room loop (160/160, ~25 min)',
