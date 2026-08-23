@@ -3479,7 +3479,23 @@ function simulate(record){
               ' + stall on the same click from '+st.hp+' hp, self-hit '+selfAmt+
               ' queued FIRST · '+st.prayPts+' prayer point(s) in the pool'});
           }
-          ev.push({t:'mv',s:'stall '+st.stall+'t armed, cap frozen at '+st.hp+' hp ('+st.phase+')'});
+          /* ★★ THE LEDGER LINE, MADE LOUD (Rendi, 22 Aug). The arm tick is the one
+             the whole cycle turns on, so print WHICH TICKS THIS STALL IS ACTUALLY
+             CLAIMING rather than just its length. Attacks and floor do not share a
+             window — the floor is claimed from the arm tick itself and attacks only
+             from the tick after — and that asymmetry is exactly where the open
+             double-count bug lives, so it belongs on screen, not in a comment. */
+          { const _tx=p('stallClickTax'), _L=len;
+            const _aFrom=st.tick+1, _aTo=st.tick+_L-1+_tx;
+            const _fFrom=st.tick,   _fTo=st.tick+_L-1+_tx;
+            const _dump=st.tick+_L+_tx;
+            ev.push({t:'mv',s:'<b>&#9878; STALL ARMED &mdash; '+_L+'t'+(_tx?' +'+_tx+' click tax':'')+
+              '</b> &middot; cap frozen at '+st.hp+' hp &middot; phase '+st.phase+
+              ' <b>&middot; CLAIMS:</b> attacks t'+_aFrom+(_aTo>=_aFrom?'&ndash;t'+_aTo:' (none &mdash; window empty)')+
+              ' &middot; floor t'+_fFrom+'&ndash;t'+_fTo+' ('+(_fTo-_fFrom+1)+' tick'+((_fTo-_fFrom)?'s':'')+')'+
+              ' &middot; <b>dumps t'+_dump+'</b>'+
+              (_tx && _fFrom===st.tick ? ' <span style="color:#ffb4a8">&#9888; floor counted from the ARM tick AND the tax is on &mdash; this is the open double-count, see PATCH-NOTES v15</span>' : '')});
+          }
           }
         }
         /* ★ RNG phase (Rendi): once the budget is gone, sit at the ceiling and
