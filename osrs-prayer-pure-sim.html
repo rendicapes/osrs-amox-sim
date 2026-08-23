@@ -4385,57 +4385,9 @@ const PRESETS=[
       ringsCarried:14,exitGrace:4,cakeBelow:5,stallShort:1,stallCrate:3,stallEgg:0,stallLong:0,redempBoost:1,holdBeforeSpec:0,bossHp:520,autoMax:22,specMax:34,
       icePatMin:7,icePatMax:10,prayRegenDoses:8}},
 
- {k:'postquest-nofarm', n:'⛔ post-quest — the ZERO-NIGHTSHADE route, DISPROVED by the real cake curve',
-  d:'⛔ DEAD — AND WORTH KEEPING BECAUSE OF HOW IT DIED. For about an hour this was the headline: a 2-tick '+
-    'stall made a pure rock cake descent work and took nightshade to ZERO, 66/66 across four disjoint blocks. '+
-    'Then Rendi gave me the REAL cake curve — \'it starts 10-2 = 8 hp, then 1 from there to 7 6 5 4 3 2 1\' — '+
-    'which is an EIGHT-click descent, not the five I had guessed. Re-measured under the true curve AND the '+
-    'click tax it is 7/16 without a 2-tick stall and 8/16 with one. The route was never real; it was an '+
-    'artefact of a damage curve I invented. Left in the dropdown, renamed, so the mistake is visible instead '+
-    'of quietly deleted. ORIGINAL NOTE FOLLOWS: '+
-    'Adding a TWO-TICK stall to the menu makes the PURE ROCK CAKE descent work, and the nightshade bill goes '+
-    'to LITERALLY ZERO. 66 kills out of 66 across four disjoint seed blocks (3601-3616, 4001-4020, 5001-5015, '+
-    '6001-6015), blockRisk 0, nobody died and nobody ran out of clock. The cost is four minutes: 45.4 → 49.2. '+
-    '★ WHY 2 AND NOT 1: instances are what the stall SWALLOWS, over the window [T+1 … T+L-1]. At L=1 that '+
-    'window is EMPTY — a one-tick stall swallows no attack at all and converts 0.37 instances an arm, which is '+
-    'why the 1-tick experiment ground out at 195 recoil of 520 even WITH nightshade. At L=2 the window is one '+
-    'tick wide, conversion goes to 1.10-1.30, and that is enough. The whole difference between a dead route and '+
-    'a farmable one is ONE TICK of swallow window. '+
-    '★ THE MENU 2/3 IS ENOUGH — the 1-tick and the 7-tick are not needed (identical 66/66, half a minute '+
-    'faster). '+
-    '★ THE BAG, 21 OF 28: 14 unnoted rings + 4 rests + 2 regeneration potions + 1 sweet stack + 1 ROCK CAKE. '+
-    'Seven spare, and not one consumable self-damage item. '+
-    '⚠⚠ TWO THINGS MUST BE TRUE AND NEITHER IS CONFIRMED — this is why it is a separate preset and not the '+
-    'shipped one. (1) A TWO-TICK STALL MUST EXIST. Rendi\'s own note says \'we have access to 1 and 3 tick '+
-    'stalls\', so this may simply not be in the kit. (2) THE ROCK CAKE MUST DEAL 3 AT 10 HITPOINTS. Rendi said '+
-    '\'2 or 3\' and was not sure. Set cakeHi to 2 and this route reads 0/50 — it dies in every block — because '+
-    'the descent becomes 10→8→6→4→3→2→1, SIX clicks instead of five, and one tick of descent is the whole '+
-    'margin. ★ CHEAPEST SETTLING TEST ON THE PAGE: guzzle once at 10 hitpoints and read the splat. That single '+
-    'number decides whether post-quest kill count costs 338 nightshade a kill or none.',
-  pol:'redemption', p:{patrolMode:7,protMagic:2,prayerLevel:50,restSlots:4,bagRests:0,ringMode:1,
-      ringsCarried:14,exitGrace:4,cakeBelow:99,stallShort:2,stallCrate:3,stallEgg:0,stallLong:0,
-      redempBoost:1,holdBeforeSpec:0,bossHp:520,autoMax:22,specMax:34,
-      icePatMin:7,icePatMax:10,prayRegenDoses:8}},
-
- /* ── alternates and disproofs ─────────────────────────────────────── */
- {k:'quest-noloop', n:'· quest — floor tank with NO LOOP (the before picture)',
-  d:'The same route with the walk unpinned: 133/160 against 160/160. Here so the loop can be checked rather '+
-    'than believed.',
-  pol:'floortank', p:{patrolMode:0,protMagic:3,prayerLevel:37,restSlots:15,bagRests:0,ringMode:1,
-      ringsCarried:11,holdBeforeSpec:6,exitGrace:0,redempBoost:0,bossHp:400,autoMax:16,specMax:17,
-      icePatMin:3,icePatMax:5,prayRegenDoses:4}},
- {k:'quest-redemp', n:'⛔ quest — Redemption on the rectangle — KILLED BY THE CLICK TAX (was 160/160)',
-  d:'⛔ WAS 160/160 at ~26 min. Under the stall click tax (Rendi, 22 Aug — an inventory action takes a tick to '+
-    'register) it reads 1/12, and retuning exitGrace 3/4 against cakeBelow 4/5 tops out at 3/12. Every '+
-    'Redemption-based QUEST route died the same way, and the reason is structural rather than tuning: the quest '+
-    'variant\'s whole margin came from packing a stall cycle into a 3-5 floor, and one extra tick per arm is '+
-    'more than that margin. ★ THE SHIPPED QUEST ROUTE IS UNAFFECTED because the floor tank never arms a stall '+
-    'at all — no stall, no click tax, and it still reads 20/20. Kept visible rather than deleted.',
-  pol:'redemption', p:{patrolMode:1,protMagic:2,prayerLevel:50,restSlots:15,bagRests:0,ringMode:1,
-      ringsCarried:11,exitGrace:0,redempBoost:0,holdBeforeSpec:0,bossHp:400,autoMax:16,specMax:17,
-      icePatMin:3,icePatMax:5,prayRegenDoses:4}},
  {k:'quest-hybrid', n:'· quest — Hybrid on the room loop (160/160, ~25 min)',
-  d:'The hybrid loop-free is 95/160. On the ROOM loop it is 160/160, because what was killing it was icing its '+
+  d:'★ The dropdown is now ROUTES ONLY. Five entries were removed on 22 Aug — two that the click tax killed, the disproved zero-nightshade cake route, and two stale before-and-after controls whose numbers no longer meant what their names said. Nothing was hidden: every one of them, why it existed and how it died, is in PATCH-NOTES.md. What is left is four routes that all actually work. '+
+    'The hybrid loop-free is 95/160. On the ROOM loop it is 160/160, because what was killing it was icing its '+
     'own refuge. Faster than Redemption, less forgiving than the floor tank.',
   pol:'hybrid', p:{patrolMode:7,protMagic:2,prayerLevel:50,restSlots:15,bagRests:0,ringMode:1,
       ringsCarried:11,exitGrace:0,redempBoost:0,holdBeforeSpec:0,bossHp:400,autoMax:16,specMax:17,
@@ -4446,26 +4398,6 @@ const PRESETS=[
   pol:'floortank', p:{patrolMode:2,protMagic:3,prayerLevel:37,restSlots:0,bagRests:0,ringMode:1,
       ringsCarried:11,holdBeforeSpec:6,exitGrace:0,redempBoost:0,bossHp:400,autoMax:16,specMax:17,
       icePatMin:3,icePatMax:5,prayRegenDoses:4}},
- {k:'post-unnoted', n:'· post-quest — THE BEFORE PICTURE (grace 2, noted rings, 17%)',
-  d:'★ KEPT AS THE CONTROL, because the difference between this row and the shipped post-quest row is ONE '+
-    'PARAMETER. This is exitGrace 2; the shipped route is exitGrace 4. Everything else — route, loop, prayer, '+
-    'protection, boss hitpoints, floor 7-10 — is identical. This kills 7 in 40. The shipped one kills 40 in 40. '+
-    'Run them back to back and the whole post-quest fight is that one number. '+
-    '⚠ It also carries the OLD conclusion, which is now DEAD: this build spent twelve slots on Guthix rest and '+
-    'therefore needed noted rings on a ring of suffering, and I wrote down that the easier unnoted handling '+
-    '"costs seven kills". Under grace 4 the rests turn out not to matter at all (40/40 at 12, 8, 6, 4 and 2 '+
-    'flasks), so the slots go to rings and the hard refresh is simply gone. The trade I measured was real; it '+
-    'was a property of a route that was dying, not of the ring handling.',
-  pol:'redemption', p:{patrolMode:7,protMagic:2,prayerLevel:50,restSlots:20,bagRests:0,ringMode:0,
-      ringsCarried:13,exitGrace:2,redempBoost:1,holdBeforeSpec:0,bossHp:520,autoMax:22,specMax:34,
-      icePatMin:7,icePatMax:10,prayRegenDoses:8}},
- {k:'post-if', n:'⛔ post-quest — IF its floor were 3-5 (also killed by the click tax)',
-  d:'⚠ NOT A PLAN. 520 hitpoints and her 22/34 max hits with the QUEST floor: 160/160. It isolates the floor as '+
-    'the thing that breaks that fight — her hitpool and her max hits are not the problem, because the frozen cap '+
-    'flattens any roll to a 1 inside the stall.',
-  pol:'redemption', p:{patrolMode:1,protMagic:2,prayerLevel:50,restSlots:15,bagRests:0,ringMode:1,
-      ringsCarried:13,exitGrace:0,redempBoost:0,holdBeforeSpec:0,bossHp:520,autoMax:22,specMax:34,
-      icePatMin:3,icePatMax:5,prayRegenDoses:8}},
 ];
 let PRESET='quest';
 function applyPreset(k){
